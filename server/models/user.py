@@ -31,7 +31,6 @@ class UserInDB(BaseModel):
     email: EmailStr
     full_name: str | None = None
 
-
     def fake_save_user(new_user: NewUserModel):
         key,encoded_password = Utiluser.encode_password(NewUserModel.password)
         user_in_db = UserInDB(**new_user.dict(), key=key,encoded_password=encoded_password)
