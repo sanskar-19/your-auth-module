@@ -1,29 +1,17 @@
 from cryptography.fernet import Fernet
 from ..models import user as user_models
 import uuid
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def encode_password(user_password: str) -> bytes:
-
-    user_password = bytes(user_password, "utf-8")
-    key = Fernet.generate_key()
-    cipher_suite = Fernet(key)
-    ciphered_text = cipher_suite.encrypt(user_password)  # required to be bytes
-
-    return key, ciphered_text
+def verify_password(password: str, hashed_password: str):
+    return pwd_context.verify(password, hashed_password)
 
 
-def password_matcher(
-    key, user_db_password, user_password: bytes
-) -> bool:  # both the user_password and user_db_password are encrypteed and then decoded to check for correct credentials
-
-    cipher_suite = Fernet(key)
-    unciphered_text = cipher_suite.decrypt(user_db_password)
-    user_password = bytes(user_password, "utf-8")
-    if unciphered_text == user_password:
-        return True
-
-    return False
+def generate_hash(password: str):
+    return pwd_context.hash(password)
 
 
 def create_new_user(
@@ -35,12 +23,14 @@ def create_new_user(
 ):
     # Generate new uuid here
     uid = uuid.uuid4()
+
+    # Create new user object for the db
     new_user = user_models.NewUserInDb(
         uid=str(uid),
         first_name=first_name,
         last_name=last_name,
         email=email,
-        hashed_password=password,
+        hashed_password=generate_hash(password),
         role=role,
     )
 
