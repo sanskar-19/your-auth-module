@@ -3,6 +3,7 @@ import time
 from datetime import datetime, timedelta
 from cryptography.hazmat.primitives import serialization
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+from .exceptions import ExpiredToken, InvalidToken
 
 
 def load_private_key(pk_file_path: str, password: str | None = ""):
@@ -42,14 +43,9 @@ def validate_access_token(access_token: str):
         payload = jwt.decode(access_token, key=pu, algorithms="RS256")
 
         if payload["exp"] <= time.time():
-            raise ExpiredTokenError("Token Expired")
+            raise ExpiredToken()
 
         return payload
 
-    except Exception as e:
-        raise e
-
-
-class ExpiredTokenError(Exception):
-    def __init__(self, msg):
-        Exception(msg)
+    except InvalidTokenError as e:
+        raise InvalidToken()

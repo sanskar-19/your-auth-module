@@ -8,8 +8,15 @@ def getUserException():
     return exception
 
 
-def InvalidToken(message: str):
+def InvalidToken():
     exception = HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST, detail=str(message)
+        status_code=status.HTTP_401_UNAUTHORIZED, detail=str("Invalid Token")
+    )
+    return exception
+
+
+def ExpiredToken():
+    exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail=str("Expired Token")
     )
     return exception
