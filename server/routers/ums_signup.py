@@ -13,8 +13,14 @@ async def signup(user: user_models.NewUser):
     new_user = user_utils.create_new_user(**user.dict())
 
     # Check if user already exists in a db
-    if new_user in db.users:
-        raise exceptions.getUserException()
+    flag = False
+    for db_user in db.users:
+        if db_user["email"] == user.email:
+            flag = True
+            break
+
+    if flag:
+        raise exceptions.UserAlreadyExists()
 
     else:
         db.users.append(new_user)
@@ -23,16 +29,25 @@ async def signup(user: user_models.NewUser):
         "users": db.users,
         "message": "user added successfully",
         "token": jwt_utils.create_access_token(
-            userid="1234", email=user.email, role="admin"
+            userid=new_user["uid"], email=user.email, role="admin"
         ),
     }
 
 
-# login
+# validate-token
 @router.post("/validate-token")
-async def signin(token: str = Header()):
+async def validate_token(token: str = Header()):
     try:
         payload = jwt_utils.validate_access_token(access_token=token)
         return payload
     except Exception as e:
-        return exceptions.InvalidToken(message=e)
+        raise e
+
+
+# validate-password
+@router.post("/validate-password")
+async def check_password(password: str, hashed_password: str):
+    if user_utils.verify_password(password=password, hashed_password=hashed_password):
+        return "Password Verified"
+    else:
+        raise exceptions.e_invalid_credentials()

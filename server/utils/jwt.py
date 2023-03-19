@@ -1,10 +1,10 @@
 import jwt
-import time
 from datetime import datetime, timedelta
 from cryptography.hazmat.primitives import serialization
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+from .exceptions import e_expired_token, e_invalid_token
 
-
+# Function to load private key
 def load_private_key(pk_file_path: str, password: str | None = ""):
     f = open(pk_file_path, "r")
     private_key = f.read()
@@ -14,6 +14,7 @@ def load_private_key(pk_file_path: str, password: str | None = ""):
     )
 
 
+# Function to load public key
 def load_public_key(pk_file_path: str):
     f = open(pk_file_path, "r")
     public_key = f.read()
@@ -21,10 +22,12 @@ def load_public_key(pk_file_path: str):
     return serialization.load_ssh_public_key(public_key.encode())
 
 
+# Loading the rsa keys
 pu = load_public_key(pk_file_path="server\\utils\\keys\\id_rsa.pub")
 pr = load_private_key(pk_file_path="server\\utils\\keys\\id_rsa")
 
 
+# Function to create the JWT
 def create_access_token(userid: str, email: str, role: str | None):
     payload = {
         "uid": userid,
@@ -37,19 +40,15 @@ def create_access_token(userid: str, email: str, role: str | None):
     return jwt.encode(payload, key=pr, algorithm="RS256")
 
 
+# Function to validate the JWT
 def validate_access_token(access_token: str):
+    # Using Expired Signature from pyjwt to validate the signature expiration error
     try:
         payload = jwt.decode(access_token, key=pu, algorithms="RS256")
-
-        if payload["exp"] <= time.time():
-            raise ExpiredTokenError("Token Expired")
-
         return payload
 
-    except Exception as e:
-        raise e
+    except ExpiredSignatureError as e:
+        raise e_expired_token()
 
-
-class ExpiredTokenError(Exception):
-    def __init__(self, msg):
-        Exception(msg)
+    except InvalidTokenError as e:
+        raise e_invalid_token()
