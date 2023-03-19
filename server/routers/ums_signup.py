@@ -29,7 +29,10 @@ async def signup(user: user_models.NewUser):
 
 
 # login
-@router.post("/signin")
-async def signin(user: user_models.ExistingUser):
-    # token = jwt.create_access_token()
-    return user
+@router.post("/validate-token")
+async def signin(token: str = Header()):
+    try:
+        payload = jwt_utils.validate_access_token(access_token=token)
+        return payload
+    except Exception as e:
+        return exceptions.InvalidToken(message=e)
