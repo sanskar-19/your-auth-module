@@ -1,24 +1,20 @@
 from fastapi import APIRouter, Header, status
-from ..models import user
-from ..utils import exceptions, user as Utiluser
-from typing import Union
-from ..utils import jwt as jwt_utils, db, user as user_utils
+from ..models import user as user_models
+from ..utils import db, exceptions, jwt as jwt_utils, user as user_utils
 
 
 router = APIRouter(prefix="/api/ums")
 
 # signup
-@router.post("/signup")
-async def signup(user: user.NewUserModel):
-    key, encoded_user_password = Utiluser.encode_password(
-        user.password
-    )  # this key and encoded password will be stored in DB
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+async def signup(user: user_models.NewUser):
 
+    # Creating new user
     new_user = user_utils.create_new_user(**user.dict())
 
     # Check if user already exists in a db
-    if new_user["email"] in db.users:
-        return "User Already Exits"
+    if new_user in db.users:
+        raise exceptions.getUserException()
 
     else:
         db.users.append(new_user)
@@ -34,14 +30,6 @@ async def signup(user: user.NewUserModel):
 
 # login
 @router.post("/signin")
-async def signin(user: user.ExistingUserModel):
+async def signin(user: user_models.ExistingUser):
     # token = jwt.create_access_token()
     return user
-
-
-# tokentest
-@router.post("/test", status_code=status.HTTP_201_CREATED)
-async def token(token: str | None = Header(default=None)):
-    if not token:
-        raise exceptions.getUserException()
-    return token
