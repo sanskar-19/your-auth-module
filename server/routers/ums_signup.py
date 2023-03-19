@@ -34,11 +34,20 @@ async def signup(user: user_models.NewUser):
     }
 
 
-# login
+# validate-token
 @router.post("/validate-token")
-async def signin(token: str = Header()):
+async def validate_token(token: str = Header()):
     try:
         payload = jwt_utils.validate_access_token(access_token=token)
         return payload
     except Exception as e:
         raise e
+
+
+# validate-password
+@router.post("/validate-password")
+async def check_password(password: str, hashed_password: str):
+    if user_utils.verify_password(password=password, hashed_password=hashed_password):
+        return "Password Verified"
+    else:
+        raise exceptions.e_invalid_credentials()
