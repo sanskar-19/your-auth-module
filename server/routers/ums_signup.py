@@ -13,8 +13,14 @@ async def signup(user: user_models.NewUser):
     new_user = user_utils.create_new_user(**user.dict())
 
     # Check if user already exists in a db
-    if new_user in db.users:
-        raise exceptions.getUserException()
+    flag = False
+    for db_user in db.users:
+        if db_user["email"] == user.email:
+            flag = True
+            break
+
+    if flag:
+        raise exceptions.UserAlreadyExists()
 
     else:
         db.users.append(new_user)
