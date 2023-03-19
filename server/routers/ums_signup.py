@@ -20,7 +20,7 @@ async def signup(user: user_models.NewUser):
             break
 
     if flag:
-        raise exceptions.UserAlreadyExists()
+        raise exceptions.e_user_already_exists()
 
     else:
         db.users.append(new_user)
