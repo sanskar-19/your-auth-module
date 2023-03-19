@@ -23,7 +23,7 @@ async def signup(user: user_models.NewUser):
         "users": db.users,
         "message": "user added successfully",
         "token": jwt_utils.create_access_token(
-            userid="1234", email=user.email, role="admin"
+            userid=new_user["uid"], email=user.email, role="admin"
         ),
     }
 
@@ -35,4 +35,4 @@ async def signin(token: str = Header()):
         payload = jwt_utils.validate_access_token(access_token=token)
         return payload
     except Exception as e:
-        return exceptions.InvalidToken(message=e)
+        raise e
