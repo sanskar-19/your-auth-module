@@ -1,9 +1,9 @@
 import jwt
 from datetime import datetime, timedelta
 from cryptography.hazmat.primitives import serialization
-from jwt.exceptions import ExpiredSignatureError,InvalidTokenError
-from .exceptions import ExpiredToken,InvalidToken
-
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+from .exceptions import e_expired_token, e_invalid_token
+from config import setting
 
 
 # Function to load private key
@@ -38,7 +38,7 @@ def create_access_token(userid: str, email: str, role: str | None):
         "email": email,
         "role": role,
         "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(seconds=30),
+        "exp": datetime.utcnow() + timedelta(seconds=600),
     }
     return jwt.encode(payload, key=pr, algorithm="RS256")
 
