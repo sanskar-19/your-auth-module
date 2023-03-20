@@ -6,7 +6,11 @@ from ..utils import db, exceptions, jwt as jwt_utils, user as user_utils
 router = APIRouter(prefix="/api/ums")
 
 # signup
-@router.post("/signup", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/signup",
+    status_code=status.HTTP_201_CREATED,
+    response_model=user_models.ResponseModel,
+)
 async def signup(user: user_models.NewUser):
 
     # Creating new user
@@ -26,16 +30,18 @@ async def signup(user: user_models.NewUser):
         db.users.append(new_user)
 
     return {
-        "users": db.users,
-        "message": "user added successfully",
-        "token": jwt_utils.create_access_token(
-            uid=new_user["uid"], email=user.email, role="admin"
-        ),
+        "data": {
+            "users": db.users,
+        },
+        "message": "User added successfully",
     }
 
 
 # create login route
-@router.post("/login")
+@router.post(
+    "/login",
+    response_model=user_models.ResponseModel,
+)
 async def login(user: user_models.ExistingUser):
     for db_user in db.users:
         if db_user["email"] == user.email:
@@ -45,26 +51,26 @@ async def login(user: user_models.ExistingUser):
                 token = jwt_utils.create_access_token(
                     uid=db_user["uid"], email=db_user["email"], role="admin"
                 )
-                return {"token": token, "message": "Token created successfully"}
+                return {
+                    "data": {
+                        "token": token,
+                    },
+                    "message": "User logged in successfully",
+                }
+
             else:
                 raise exceptions.e_invalid_credentials()
     raise exceptions.e_user_not_found()
 
 
 # validate-token
-@router.post("/validate-token")
+@router.post(
+    "/validate-token",
+    response_model=user_models.ResponseModel,
+)
 async def validate_token(token: str = Header()):
     try:
         payload = jwt_utils.validate_access_token(access_token=token)
-        return payload
+        return {"data": payload, "message": "Token Validated"}
     except Exception as e:
         raise e
-
-
-# validate-password
-@router.post("/validate-password")
-async def check_password(password: str, hashed_password: str):
-    if user_utils.verify_password(password=password, hashed_password=hashed_password):
-        return "Password Verified"
-    else:
-        raise exceptions.e_invalid_credentials()
