@@ -21,3 +21,8 @@ class NewUserInDb(BaseModel):
     email: EmailStr
     hashed_password: str
     role: str | None = "admin"
+
+
+class ResponseModel(BaseModel):
+    data: dict
+    message: str
