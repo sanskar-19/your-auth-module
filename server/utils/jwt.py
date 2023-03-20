@@ -33,7 +33,7 @@ pr = load_private_key(pk_file_path=setting.PRIVATE_KEY)
 
 
 # Function to create the JWT
-def create_access_token(uid: str, email: str, role: str | None):
+def create_access_token(uid: str, email: str, role: str):
     payload = {
         "uid": uid,
         "email": email,

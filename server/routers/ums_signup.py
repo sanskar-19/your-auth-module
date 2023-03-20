@@ -49,7 +49,7 @@ async def login(user: user_models.ExistingUser):
                 password=user.password, hashed_password=db_user["hashed_password"]
             ):
                 token = jwt_utils.create_access_token(
-                    uid=db_user["uid"], email=db_user["email"], role="admin"
+                    uid=db_user["uid"], email=db_user["email"], role=db_user["role"]
                 )
                 return {
                     "data": {
