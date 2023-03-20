@@ -34,6 +34,23 @@ async def signup(user: user_models.NewUser):
     }
 
 
+# create login route
+@router.post("/login")
+async def login(user: user_models.ExistingUser):
+    for db_user in db.users:
+        if db_user["email"] == user.email:
+            if user_utils.verify_password(
+                password=user.password, hashed_password=db_user["hashed_password"]
+            ):
+                token = jwt_utils.create_access_token(
+                    uid=db_user["uid"], email=db_user["email"], role="admin"
+                )
+                return {"token": token, "message": "Token created successfully"}
+            else:
+                raise exceptions.e_invalid_credentials()
+    raise exceptions.e_user_not_found()
+
+
 # validate-token
 @router.post("/validate-token")
 async def validate_token(token: str = Header()):
@@ -51,20 +68,3 @@ async def check_password(password: str, hashed_password: str):
         return "Password Verified"
     else:
         raise exceptions.e_invalid_credentials()
-
-
-# create login route
-@router.post("/login")
-async def login(user: user_models.ExistingUser):
-    for db_user in db.users:
-        if db_user["email"] == user.email:
-            if user_utils.verify_password(
-                password=user.password, hashed_password=db_user["hashed_password"]
-            ):
-                token = jwt_utils.create_access_token(
-                    uid=db_user["uid"], email=db_user["email"], role="admin"
-                )
-                return {"token": token, "message": "Token created successfully"}
-            else:
-                raise exceptions.e_invalid_credentials()
-    raise exceptions.e_user_not_found()
