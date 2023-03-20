@@ -16,10 +16,13 @@ def e_invalid_credentials():
     )
     return exception
 
+
 def e_user_not_found():
     exception = HTTPException(
         status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
     )
+    return exception
+
 
 ######################### Token Exceptions #########################
 def e_invalid_token():
