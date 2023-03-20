@@ -23,8 +23,9 @@ def load_public_key(pk_file_path: str):
     f.close()
     return serialization.load_ssh_public_key(public_key.encode())
 
-pu = load_public_key(pk_file_path='server\\utils\\keys\\id_rsa.pub')
-pr = load_private_key(pk_file_path='server\\utils\\keys\\id_rsa')
+
+pu = load_public_key(pk_file_path="server\\utils\\keys\\id_rsa.pub")
+pr = load_private_key(pk_file_path="server\\utils\\keys\\id_rsa")
 
 # Loading the rsa keys
 pu = load_public_key(pk_file_path=setting.PUBLIC_KEY)
@@ -32,15 +33,15 @@ pr = load_private_key(pk_file_path=setting.PRIVATE_KEY)
 
 
 # Function to create the JWT
-def create_access_token(userid: str, email: str, role: str | None):
+def create_access_token(uid: str, email: str, role: str | None):
     payload = {
-        "uid": userid,
+        "uid": uid,
         "email": email,
         "role": role,
         "iat": datetime.utcnow(),
         "exp": datetime.utcnow() + timedelta(seconds=600),
     }
-    return jwt.encode(payload, key=pr, algorithm="RS256")
+    return jwt.encode(payload, key=pr, algorithm=setting.ALGORITHM)
 
 
 # Function to validate the JWT
