@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Header, status
-from ..models import user as user_models
+from ..schema import user as user_models
 from ..utils import db, exceptions, jwt as jwt_utils, user as user_utils
 
 
