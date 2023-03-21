@@ -9,6 +9,7 @@ class Setting(BaseSettings):
     ALGORITHM: str
     PRIVATE_KEY: str
     PUBLIC_KEY: str
+    DATABASE_URL: str
 
     class Config:
         env_file = ".env"
