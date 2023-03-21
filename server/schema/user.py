@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from ..utils import user as Utiluser
+from datetime import datetime
 
 
 class NewUser(BaseModel):
@@ -21,6 +22,10 @@ class NewUserInDb(BaseModel):
     email: EmailStr
     hashed_password: str
     role: str | None = "admin"
+    created_at: datetime
+
+    class Config:
+        orm_mode = True  # allows the app to take ORM objects and translate them into responses automatically
 
 
 class ResponseModel(BaseModel):

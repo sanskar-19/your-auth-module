@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Header, status
-from ..schema import user as user_models
+from fastapi import APIRouter, Header, status, Depends
+from ..schema import user as user_schema
 from ..utils import db, exceptions, jwt as jwt_utils, user as user_utils
+from ..models.user import UserModel
+from sqlalchemy.orm import Session
+from ..database import get_db
 
+db = get_db()
 
 router = APIRouter(prefix="/api/ums")
 
@@ -9,29 +13,20 @@ router = APIRouter(prefix="/api/ums")
 @router.post(
     "/signup",
     status_code=status.HTTP_201_CREATED,
-    response_model=user_models.ResponseModel,
+    response_model=user_schema.ResponseModel,
 )
-async def signup(user: user_models.NewUser):
+async def signup(user: user_schema.NewUser, db: Session = Depends(get_db)):
 
     # Creating new user
     new_user = user_utils.create_new_user(**user.dict())
-
-    # Check if user already exists in a db
-    flag = False
-    for db_user in db.users:
-        if db_user["email"] == user.email:
-            flag = True
-            break
-
-    if flag:
-        raise exceptions.e_user_already_exists()
-
-    else:
-        db.users.append(new_user)
+    print(new_user)
+    db_user = UserModel(**new_user)
+    db.add(db_user)
+    db.commit()
 
     return {
         "data": {
-            "users": db.users,
+            "users": new_user,
         },
         "message": "User added successfully",
     }
@@ -40,9 +35,9 @@ async def signup(user: user_models.NewUser):
 # create login route
 @router.post(
     "/login",
-    response_model=user_models.ResponseModel,
+    response_model=user_schema.ResponseModel,
 )
-async def login(user: user_models.ExistingUser):
+async def login(user: user_schema.ExistingUser):
     for db_user in db.users:
         if db_user["email"] == user.email:
             if user_utils.verify_password(
@@ -66,7 +61,7 @@ async def login(user: user_models.ExistingUser):
 # validate-token
 @router.post(
     "/validate-token",
-    response_model=user_models.ResponseModel,
+    response_model=user_schema.ResponseModel,
 )
 async def validate_token(token: str = Header()):
     try:
