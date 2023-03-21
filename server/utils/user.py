@@ -1,4 +1,4 @@
-from ..models import user as user_models
+from ..schema import user as user_models
 import uuid
 from passlib.context import CryptContext
 
