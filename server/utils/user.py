@@ -1,4 +1,5 @@
-from ..schema import user as user_models
+from ..schema import user as user_schema
+from datetime import datetime
 import uuid
 from passlib.context import CryptContext
 
@@ -16,13 +17,14 @@ def create_new_user(
     uid = uuid.uuid4()
 
     # Create new user object for the db
-    new_user = user_models.NewUserInDb(
+    new_user = user_schema.NewUserInDb(
         uid=str(uid),
         first_name=first_name,
         last_name=last_name,
         email=email,
         hashed_password=generate_hash(password),
         role=role,
+        created_at=datetime.now(),
     )
 
     return new_user.dict()
