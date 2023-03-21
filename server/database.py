@@ -8,6 +8,7 @@ from contextvars import ContextVar
 # url_pattern = 'mysql+mysqldb://{USERNAME}:{PASSWORD}@{HOST_NAME}/{DATABASE_NAME}'.format(
 #     USERNAME = USERNAME , PASSWORD = PASSWORD , HOST_NAME = HOST_NAME , DATABASE_NAME = DATABASE_NAME
 # )
+# 'mysql+mysqldb://root:root@127.0.0.1:3306/auth'
 pymysql.install_as_MySQLdb()
 db_engine = create_engine(setting.DATABASE_URL)
 SessionLocal = scoped_session(
