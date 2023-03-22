@@ -2,10 +2,12 @@ from ..schema import user as user_schema
 from datetime import datetime
 import uuid
 from passlib.context import CryptContext
+from ..models import user
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+# Create new user for the db
 def create_new_user(
     first_name: str,
     last_name: str,
@@ -27,7 +29,7 @@ def create_new_user(
         created_at=datetime.now(),
     )
 
-    return new_user.dict()
+    return user.UserModel(**new_user.dict())
 
 
 def verify_password(password: str, hashed_password: str):
