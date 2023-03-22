@@ -28,6 +28,16 @@ class NewUserInDb(BaseModel):
         orm_mode = True  # allows the app to take ORM objects and translate them into responses automatically
 
 
+class UserDetails(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    role: str | None = "admin"
+
+    class Config:
+        orm_mode = True  # allows the app to take ORM objects and translate them into responses automatically
+
+
 class ResponseModel(BaseModel):
     data: dict
     message: str
