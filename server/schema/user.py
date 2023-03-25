@@ -41,3 +41,9 @@ class UserDetails(BaseModel):
 class ResponseModel(BaseModel):
     data: dict
     message: str
+
+
+class ResetPassword(BaseModel):
+    new_password: str
+    email: EmailStr
+    otp: str

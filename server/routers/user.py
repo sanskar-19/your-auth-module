@@ -5,7 +5,7 @@ from ..models.user import UserModel
 from sqlalchemy.orm import Session
 from ..database import get_db
 from pydantic import EmailStr
-from datetime import datetime
+from datetime import datetime, timedelta
 
 db = get_db()
 
@@ -72,8 +72,38 @@ async def get_user_details(token: str = Header(), db: Session = Depends(get_db))
     "/reset-password",
     response_model=user_schema.ResponseModel,
 )
-async def reset_password(email: EmailStr):
-    pass
+async def reset_password(
+    new_password: user_schema.ResetPassword, db: Session = Depends(get_db)
+):
+    try:
+        user_from_db = db.query(UserModel).filter(UserModel.email == new_password.email)
+        if user_from_db is None:
+            raise exceptions.e_user_not_found()
+
+        otp, otp_expiry = user_from_db.first().otp, user_from_db.first().otp_expiry_at
+
+        if otp is None:
+            raise exceptions.e_generate_otp_first()
+
+        if datetime.now() > otp_expiry:
+            raise exceptions.e_otp_expired()
+
+        if otp == new_password.otp:
+            user_from_db.update(
+                {
+                    UserModel.hashed_password: user_utils.generate_hash(
+                        new_password.new_password
+                    ),
+                    UserModel.otp: None,
+                    UserModel.otp_expiry_at: None,
+                }
+            )
+            db.commit()
+            return {"data": {}, "message": "Password Reset Successfully"}
+        else:
+            raise exceptions.e_otp_mistmached()
+    except Exception as e:
+        raise e
 
 
 # send password reset email

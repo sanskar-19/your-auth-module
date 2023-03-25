@@ -37,14 +37,17 @@ def create_new_user(
     return user.UserModel(**new_user.dict())
 
 
+# Verify password
 def verify_password(password: str, hashed_password: str):
     return pwd_context.verify(password, hashed_password)
 
 
+# Generate has password for storing in db
 def generate_hash(password: str):
     return pwd_context.hash(password)
 
 
+# Send email function
 def send_email(email: str):
     msg = MIMEText("Hello World")
     msg["Subject"] = "Test Mail"
@@ -63,6 +66,7 @@ def send_email(email: str):
     smtp_email_server.quit()
 
 
+# Generate otp
 def generate_otp():
     start = 10**5 + 1
     end = 10**6 - 1
