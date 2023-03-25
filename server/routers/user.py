@@ -4,12 +4,14 @@ from ..utils import db, exceptions, jwt as jwt_utils, user as user_utils
 from ..models.user import UserModel
 from sqlalchemy.orm import Session
 from ..database import get_db
+from pydantic import EmailStr
+from datetime import datetime
 
 db = get_db()
 
 router = APIRouter(prefix="/api/ums")
 
-# signup
+# Signup as a new user
 @router.post(
     "/signup",
     status_code=status.HTTP_201_CREATED,
@@ -23,6 +25,36 @@ async def signup(user: user_schema.NewUser, db: Session = Depends(get_db)):
         raise e
 
 
+# Login
+@router.post(
+    "/login", response_model=user_schema.ResponseModel, status_code=status.HTTP_200_OK
+)
+async def login(user: user_schema.ExistingUser, db: Session = Depends(get_db)):
+    try:
+        user_from_db = db.query(UserModel).filter(UserModel.email == user.email).first()
+        if user_from_db is None:
+            raise exceptions.e_user_not_found()
+        else:
+            if user_utils.verify_password(
+                password=user.password, hashed_password=user_from_db.hashed_password
+            ):
+                token = jwt_utils.create_access_token(
+                    uid=user_from_db.uid,
+                    email=user_from_db.email,
+                    role=user_from_db.role,
+                )
+                return {
+                    "data": {"access_token": token},
+                    "message": "Logged in successfully",
+                }
+            else:
+                raise exceptions.e_invalid_credentials()
+
+    except Exception as e:
+        raise e
+
+
+# Fetch user details from token
 @router.get(
     "/fetch-user-details",
     status_code=status.HTTP_200_OK,
@@ -35,30 +67,46 @@ async def get_user_details(token: str = Header(), db: Session = Depends(get_db))
         raise e
 
 
-# create login route
-# @router.post(
-#     "/login",
-#     response_model=user_schema.ResponseModel,
-# )
-# async def login(user: user_schema.ExistingUser):
-#     for db_user in db.users:
-#         if db_user["email"] == user.email:
-#             if user_utils.verify_password(
-#                 password=user.password, hashed_password=db_user["hashed_password"]
-#             ):
-#                 token = jwt_utils.create_access_token(
-#                     uid=db_user["uid"], email=db_user["email"], role=db_user["role"]
-#                 )
-#                 return {
-#                     "data": {
-#                         "token": token,
-#                     },
-#                     "message": "User logged in successfully",
-#                 }
+# reset password using otp
+@router.post(
+    "/reset-password",
+    response_model=user_schema.ResponseModel,
+)
+async def reset_password(email: EmailStr):
+    pass
 
-#             else:
-#                 raise exceptions.e_invalid_credentials()
-#     raise exceptions.e_user_not_found()
+
+# send password reset email
+@router.post(
+    "/send-password-reset-email",
+    response_model=user_schema.ResponseModel,
+)
+async def send_password_reset_email(email: EmailStr, db: Session = Depends(get_db)):
+    try:
+        user_from_db = db.query(UserModel).filter(UserModel.email == email)
+        if user_from_db.first() is None:
+            raise exceptions.e_user_not_found()
+
+        last_otp_expiry = user_from_db.first().otp_expiry_at
+        if last_otp_expiry is not None and last_otp_expiry > datetime.now():
+            raise exceptions.e_otp_not_expired(
+                wait_time=(last_otp_expiry - datetime.now()).seconds
+            )
+        else:
+            otp, otp_expiry_at = user_utils.generate_otp()
+            user_from_db.update(
+                {UserModel.otp: otp, UserModel.otp_expiry_at: otp_expiry_at}
+            )
+            db.commit()
+            return {
+                "data": {
+                    "otp": otp,
+                    "validity": otp_expiry_at,
+                },
+                "message": "Otp generated successfully",
+            }
+    except Exception as e:
+        raise e
 
 
 # validate-token

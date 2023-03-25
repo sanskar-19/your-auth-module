@@ -24,6 +24,15 @@ def e_user_not_found():
     return exception
 
 
+######################### Password reset exceptions #########################
+def e_otp_not_expired(wait_time):
+    exception = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"Please wait {wait_time} seconds before generating another OTP",
+    )
+    return exception
+
+
 ######################### Token Exceptions #########################
 def e_invalid_token():
     exception = HTTPException(

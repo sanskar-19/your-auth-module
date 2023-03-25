@@ -13,6 +13,8 @@ class UserModel(Base):
     role = Column(String(10))
     hashed_password = Column(String(256))
     created_at = Column(DateTime)
+    otp = Column(String(6))
+    otp_expiry_at = Column(DateTime)
 
     class Meta:
         db_table = "users"
