@@ -33,6 +33,30 @@ def e_otp_not_expired(wait_time):
     return exception
 
 
+def e_otp_expired():
+    exception = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"OTP Expired",
+    )
+    return exception
+
+
+def e_otp_mistmached():
+    exception = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"OTP Mismatched",
+    )
+    return exception
+
+
+def e_generate_otp_first():
+    exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=f"Generate OTP for reset token",
+    )
+    return exception
+
+
 ######################### Token Exceptions #########################
 def e_invalid_token():
     exception = HTTPException(
