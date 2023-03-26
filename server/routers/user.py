@@ -25,6 +25,72 @@ async def signup(user: user_schema.NewUser, db: Session = Depends(get_db)):
         raise e
 
 
+@router.post(
+    "/verify-account",
+    response_model=user_schema.ResponseModel,
+    status_code=status.HTTP_200_OK,
+)
+async def verify_account(email: EmailStr, otp: str, db: Session = Depends(get_db)):
+    try:
+        user_from_db = db.query(UserModel).filter(UserModel.email == email)
+        if user_from_db.first() is None:
+            raise exceptions.e_user_not_found()
+
+        if user_from_db.first().status == True:
+            return {"data": {}, "message": "Account already verified"}
+        else:
+            if otp and user_from_db.first().otp == otp:
+                if user_from_db.first().otp_expiry_at > datetime.now():
+                    user_from_db.update(
+                        {
+                            UserModel.otp: None,
+                            UserModel.otp_expiry_at: None,
+                            UserModel.status: True,
+                        }
+                    )
+                    db.commit()
+                    return {"data": {}, "message": "Account verified successfully"}
+                else:
+                    raise exceptions.e_otp_expired()
+            else:
+                if user_from_db.first().otp:
+                    raise exceptions.e_otp_mistmached()
+                else:
+                    raise exceptions.e_generate_otp_first()
+    except Exception as e:
+        raise e
+
+
+@router.post(
+    "/resend-account-verification-otp", response_model=user_schema.ResponseModel
+)
+async def resend_account_verification_otp(
+    user: user_schema.ExistingUser, db: Session = Depends(get_db)
+):
+    try:
+        user_from_db = db.query(UserModel).filter(UserModel.email == user.email)
+        if user_from_db.first():
+            if user_from_db.first().status == True:
+                print("User exists")
+                raise exceptions.e_user_already_verified()
+
+            if user_utils.verify_password(
+                user.password, user_from_db.first().hashed_password
+            ):
+                otp, otp_expiry_at = user_utils.generate_otp()
+                user_from_db.update(
+                    {UserModel.otp: otp, UserModel.otp_expiry_at: otp_expiry_at}
+                )
+                db.commit()
+                return {"data": {"otp": otp}, "message": "OTP sent successfully"}
+            else:
+                raise exceptions.e_invalid_credentials()
+        else:
+            raise exceptions.e_user_not_found()
+    except Exception as e:
+        raise e
+
+
 # Login
 @router.post(
     "/login", response_model=user_schema.ResponseModel, status_code=status.HTTP_200_OK
@@ -35,6 +101,9 @@ async def login(user: user_schema.ExistingUser, db: Session = Depends(get_db)):
         if user_from_db is None:
             raise exceptions.e_user_not_found()
         else:
+            if user_from_db.status == False:
+                raise exceptions.e_user_not_verified()
+
             if user_utils.verify_password(
                 password=user.password, hashed_password=user_from_db.hashed_password
             ):
@@ -67,8 +136,44 @@ async def get_user_details(token: str = Header(), db: Session = Depends(get_db))
         raise e
 
 
-# reset password using otp
+# send password reset email
 @router.post(
+    "/send-password-reset-email",
+    response_model=user_schema.ResponseModel,
+)
+async def send_password_reset_email(email: EmailStr, db: Session = Depends(get_db)):
+    try:
+        user_from_db = db.query(UserModel).filter(UserModel.email == email)
+        if user_from_db.first() is None:
+            raise exceptions.e_user_not_found()
+
+        if user_from_db.first().status == False:
+            raise exceptions.e_user_not_verified()
+
+        last_otp_expiry = user_from_db.first().otp_expiry_at
+        if last_otp_expiry is not None and last_otp_expiry > datetime.now():
+            raise exceptions.e_otp_not_expired(
+                wait_time=(last_otp_expiry - datetime.now()).seconds
+            )
+        else:
+            otp, otp_expiry_at = user_utils.generate_otp()
+            user_from_db.update(
+                {UserModel.otp: otp, UserModel.otp_expiry_at: otp_expiry_at}
+            )
+            db.commit()
+            return {
+                "data": {
+                    "otp": otp,
+                    "validity": otp_expiry_at,
+                },
+                "message": "Otp generated successfully",
+            }
+    except Exception as e:
+        raise e
+
+
+# reset password using otp
+@router.put(
     "/reset-password",
     response_model=user_schema.ResponseModel,
 )
@@ -79,6 +184,9 @@ async def reset_password(
         user_from_db = db.query(UserModel).filter(UserModel.email == new_password.email)
         if user_from_db is None:
             raise exceptions.e_user_not_found()
+
+        if user_from_db.first().status == False:
+            raise exceptions.e_user_not_verified()
 
         otp, otp_expiry = user_from_db.first().otp, user_from_db.first().otp_expiry_at
 
@@ -102,39 +210,6 @@ async def reset_password(
             return {"data": {}, "message": "Password Reset Successfully"}
         else:
             raise exceptions.e_otp_mistmached()
-    except Exception as e:
-        raise e
-
-
-# send password reset email
-@router.post(
-    "/send-password-reset-email",
-    response_model=user_schema.ResponseModel,
-)
-async def send_password_reset_email(email: EmailStr, db: Session = Depends(get_db)):
-    try:
-        user_from_db = db.query(UserModel).filter(UserModel.email == email)
-        if user_from_db.first() is None:
-            raise exceptions.e_user_not_found()
-
-        last_otp_expiry = user_from_db.first().otp_expiry_at
-        if last_otp_expiry is not None and last_otp_expiry > datetime.now():
-            raise exceptions.e_otp_not_expired(
-                wait_time=(last_otp_expiry - datetime.now()).seconds
-            )
-        else:
-            otp, otp_expiry_at = user_utils.generate_otp()
-            user_from_db.update(
-                {UserModel.otp: otp, UserModel.otp_expiry_at: otp_expiry_at}
-            )
-            db.commit()
-            return {
-                "data": {
-                    "otp": otp,
-                    "validity": otp_expiry_at,
-                },
-                "message": "Otp generated successfully",
-            }
     except Exception as e:
         raise e
 
@@ -163,6 +238,9 @@ def fetch_user_from_db(db: Session, token: str):
         if user is None:
             raise exceptions.e_user_not_found()
         else:
+            if user.status == False:
+                raise exceptions.e_user_not_verified()
+
             return user
 
     # Handling exceptions from JWT failure
@@ -180,18 +258,19 @@ def add_new_user_to_db(db: Session, user: dict):
         if user_from_db is not None:
             raise exceptions.e_user_already_exists()
         else:
-            user_in_db = user_utils.create_new_user(**user)
+            otp, otp_expiry_at = user_utils.generate_otp()
+            user_in_db = user_utils.create_new_user(
+                **user, otp=otp, otp_expiry_at=otp_expiry_at
+            )
+            print(user_in_db)
             db.add(user_in_db)
             db.commit()
 
-            token = jwt_utils.create_access_token(
-                uid=user_in_db.uid, email=user_in_db.email, role=user_in_db.role
-            )
+            # Send an otp to the user email for verification
+
             return {
-                "data": {
-                    "access_token": token,
-                },
-                "message": "User added successfully",
+                "data": {"otp": otp},
+                "message": "User added successfully, Please verify the account to continue",
             }
     except Exception as e:
         if e is HTTPException:

@@ -1,5 +1,5 @@
 from sqlalchemy.schema import Column
-from sqlalchemy.types import String, Integer, DateTime
+from sqlalchemy.types import String, Integer, DateTime, Boolean
 from ..database import Base
 
 
@@ -15,6 +15,7 @@ class UserModel(Base):
     created_at = Column(DateTime)
     otp = Column(String(6))
     otp_expiry_at = Column(DateTime)
+    status = Column(Boolean, default=False)
 
     class Meta:
         db_table = "users"
@@ -22,3 +23,6 @@ class UserModel(Base):
     # def __init__(self):
     #     self.uid = uid
     #     self.first_name = first_name
+
+
+# class UnConfirmedUserModel(Base):
