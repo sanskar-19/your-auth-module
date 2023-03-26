@@ -23,6 +23,8 @@ class NewUserInDb(BaseModel):
     hashed_password: str
     role: str | None = "admin"
     created_at: datetime
+    otp: str
+    otp_expiry_at: datetime
 
     class Config:
         orm_mode = True  # allows the app to take ORM objects and translate them into responses automatically

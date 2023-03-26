@@ -24,6 +24,20 @@ def e_user_not_found():
     return exception
 
 
+def e_user_not_verified():
+    exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not verified"
+    )
+    return exception
+
+
+def e_user_already_verified():
+    exception = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST, detail="Account already verified"
+    )
+    return exception
+
+
 ######################### Password reset exceptions #########################
 def e_otp_not_expired(wait_time):
     exception = HTTPException(

@@ -18,6 +18,8 @@ def create_new_user(
     last_name: str,
     email: str,
     password: str,
+    otp: str,
+    otp_expiry_at: datetime,
     role: str | None = "admin",
 ):
     # Generate new uuid here
@@ -32,6 +34,8 @@ def create_new_user(
         hashed_password=generate_hash(password),
         role=role,
         created_at=datetime.now(),
+        otp=otp,
+        otp_expiry_at=otp_expiry_at,
     )
 
     return user.UserModel(**new_user.dict())
