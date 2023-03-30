@@ -226,14 +226,28 @@ async def change_password(
             UserModel.email == jwt_decoded["email"], UserModel.uid == jwt_decoded["uid"]
         )
 
+        # Check if user exists in db
         if user_from_db.first() is None:
             raise exceptions.e_user_not_found()
 
+        # Verify the old password
         if user_utils.verify_password(
             password=payload.old_password,
             hashed_password=user_from_db.first().hashed_password,
         ):
+
+            # Verify that he entered the same passwords
             if payload.new_password == payload.confirm_password:
+
+                # Verify that he didnot entered his old password again for the new password
+                if user_utils.verify_password(
+                    password=payload.new_password,
+                    hashed_password=user_from_db.first().hashed_password,
+                ):
+                    # If yes then we raise exception
+                    raise exceptions.e_existing_password()
+
+                # Else we update the db
                 user_from_db.update(
                     {
                         UserModel.hashed_password: user_utils.generate_hash(
@@ -241,11 +255,14 @@ async def change_password(
                         )
                     }
                 )
+                # Committing
                 db.commit()
                 return {"data": {}, "message": "Password Changed Successfully"}
             else:
+                # Passwprd mismatched error
                 raise exceptions.e_password_mismatched()
         else:
+            # Invalid credentials for the old password
             raise exceptions.e_invalid_credentials()
     except Exception as e:
         raise e

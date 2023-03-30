@@ -78,6 +78,14 @@ def e_password_mismatched():
     return exception
 
 
+def e_existing_password():
+    exception = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Cannot use the same password as new one",
+    )
+    return exception
+
+
 ######################### Token Exceptions #########################
 def e_invalid_token():
     exception = HTTPException(
