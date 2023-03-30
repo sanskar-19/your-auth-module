@@ -138,10 +138,10 @@ async def get_user_details(token: str = Header(), db: Session = Depends(get_db))
 
 # send password reset email
 @router.post(
-    "/send-password-reset-email",
+    "/send-forgot-password-email",
     response_model=user_schema.ResponseModel,
 )
-async def send_password_reset_email(email: EmailStr, db: Session = Depends(get_db)):
+async def send_forgot_password_email(email: EmailStr, db: Session = Depends(get_db)):
     try:
         user_from_db = db.query(UserModel).filter(UserModel.email == email)
         if user_from_db.first() is None:
@@ -174,10 +174,10 @@ async def send_password_reset_email(email: EmailStr, db: Session = Depends(get_d
 
 # reset password using otp
 @router.put(
-    "/reset-password",
+    "/forgot-password",
     response_model=user_schema.ResponseModel,
 )
-async def reset_password(
+async def forgot_password(
     new_password: user_schema.ResetPassword, db: Session = Depends(get_db)
 ):
     try:
@@ -210,6 +210,43 @@ async def reset_password(
             return {"data": {}, "message": "Password Reset Successfully"}
         else:
             raise exceptions.e_otp_mistmached()
+    except Exception as e:
+        raise e
+
+
+@router.put("/change-password", response_model=user_schema.ResponseModel)
+async def change_password(
+    payload: user_schema.ChangePassword,
+    token: str = Header(),
+    db: Session = Depends(get_db),
+):
+    try:
+        jwt_decoded = jwt_utils.validate_access_token(token)
+        user_from_db = db.query(UserModel).filter(
+            UserModel.email == jwt_decoded["email"], UserModel.uid == jwt_decoded["uid"]
+        )
+
+        if user_from_db.first() is None:
+            raise exceptions.e_user_not_found()
+
+        if user_utils.verify_password(
+            password=payload.old_password,
+            hashed_password=user_from_db.first().hashed_password,
+        ):
+            if payload.new_password == payload.confirm_password:
+                user_from_db.update(
+                    {
+                        UserModel.hashed_password: user_utils.generate_hash(
+                            payload.new_password
+                        )
+                    }
+                )
+                db.commit()
+                return {"data": {}, "message": "Password Changed Successfully"}
+            else:
+                raise exceptions.e_password_mismatched()
+        else:
+            raise exceptions.e_invalid_credentials()
     except Exception as e:
         raise e
 
