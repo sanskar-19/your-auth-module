@@ -11,13 +11,13 @@ db = get_db()
 
 router = APIRouter(prefix="/api/ums")
 
+
 # Signup as a new user
 @router.post(
     "/signup",
     status_code=status.HTTP_201_CREATED,
 )
 async def signup(user: user_schema.NewUser, db: Session = Depends(get_db)):
-
     # Creating new user
     try:
         return add_new_user_to_db(db, user.dict())
@@ -37,7 +37,7 @@ async def verify_account(email: EmailStr, otp: str, db: Session = Depends(get_db
             raise exceptions.e_user_not_found()
 
         if user_from_db.first().status == True:
-            return {"data": {}, "message": "Account already verified"}
+            raise exceptions.e_user_already_verified()
         else:
             if otp and user_from_db.first().otp == otp:
                 if user_from_db.first().otp_expiry_at > datetime.now():
@@ -235,10 +235,8 @@ async def change_password(
             password=payload.old_password,
             hashed_password=user_from_db.first().hashed_password,
         ):
-
             # Verify that he entered the same passwords
             if payload.new_password == payload.confirm_password:
-
                 # Verify that he didnot entered his old password again for the new password
                 if user_utils.verify_password(
                     password=payload.new_password,
